@@ -281,39 +281,73 @@ loaded-=file.size;
 }
 };
 
-xhr.onload=()=>{
-const result=JSON.parse(xhr.responseText);
-if(result.files){
-result.files.forEach(fileData=>{
-if(fileData.status==="success"){
-const fullURL=window.location.origin+WEBSITE_URL+fileData.url;
-const card=document.createElement("div");
-card.className="bg-surface border border-white/10 rounded-xl p-4";
+xhr.onload = () => {
+  let result;
 
-card.innerHTML=`
-<img src="${WEBSITE_URL+fileData.url}" class="w-full h-40 object-cover rounded-lg mb-3"/>
-<p class="text-sm truncate">${fileData.file}</p>
-<a href="${fullURL}" target="_blank" class="text-primary text-sm underline block mb-2">View</a>
-<button class="bg-primary text-white px-3 py-1 rounded text-xs">Copy</button>
-`;
+  try {
+    result = JSON.parse(xhr.responseText);
+  } catch (err) {
+    alert("Upload failed: Invalid server response");
+    console.error("Invalid JSON:", xhr.responseText);
+    resetUploadUI();
+    return;
+  }
 
-card.querySelector("button").onclick=()=>{
-navigator.clipboard.writeText(fullURL);
-alert(fileData.file+" copied!");
+  if (!result || !Array.isArray(result.files)) {
+    alert("Upload failed: Unexpected server format");
+    console.error("Unexpected response:", result);
+    resetUploadUI();
+    return;
+  }
+
+  result.files.forEach(fileData => {
+    if (fileData.status === "success" && fileData.url) {
+
+      const fullURL = window.location.origin + WEBSITE_URL + fileData.url;
+
+      const card = document.createElement("div");
+      card.className = "bg-surface border border-white/10 rounded-xl p-4";
+
+      card.innerHTML = `
+        <img src="${WEBSITE_URL + fileData.url}" 
+             class="w-full h-40 object-cover rounded-lg mb-3"/>
+
+        <p class="text-sm truncate mb-1">${fileData.file}</p>
+
+        <a href="${fullURL}" target="_blank" 
+           class="text-primary text-sm underline block mb-2">
+           View
+        </a>
+
+        <button class="bg-primary text-white px-3 py-1 rounded text-xs">
+           Copy Link
+        </button>
+      `;
+
+      card.querySelector("button").onclick = () => {
+        navigator.clipboard.writeText(fullURL);
+        alert("Link copied!");
+      };
+
+      uploadedFilesDiv.appendChild(card);
+
+      // Auto copy after upload
+      navigator.clipboard.writeText(fullURL);
+
+    } else {
+      alert(fileData.reason || "Upload failed for " + fileData.file);
+    }
+  });
+
+  resetUploadUI();
 };
 
-uploadedFilesDiv.appendChild(card);
-
-/* AUTO COPY */
-navigator.clipboard.writeText(fullURL);
-}
-});
-}
-
-selectedFiles=[];
-fileList.innerHTML="";
-uploadBtn.innerText="Upload Files";
-uploadBtn.disabled=false;
+function resetUploadUI() {
+  selectedFiles = [];
+  fileList.innerHTML = "";
+  uploadBtn.innerText = "Upload Files";
+  uploadBtn.disabled = false;
+  fileInput.value = "";
 };
 
 xhr.send(formData);
