@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ImgUL Paste</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white flex flex-col items-center justify-center p-6">
+<header class="flex justify-between items-center p-6">
+
+  </header>
+  <h1 class="text-3xl font-bold mb-6 text-purple-400">Paste Your Text</h1>
+
+  <!-- Paste text area -->
+  <textarea id="pasteContent" rows="10" class="w-full max-w-2xl p-4 bg-gray-800/70 border border-gray-700 rounded text-white resize-none focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Type or paste your text here..."></textarea>
+
+  <!-- Expiration dropdown -->
+  <div class="mt-4">
+    <label for="expireSelect" class="mr-2 text-gray-300">Expiration:</label>
+    <select id="expireSelect" class="p-2 bg-gray-800 border border-gray-700 rounded text-white">
+      <option value="0">Never Expire</option>
+      <option value="10">10 minutes</option>
+      <option value="60">1 hour</option>
+      <option value="1440">1 day</option>
+      <option value="10080">7 days</option>
+    </select>
+  </div>
+
+  <!-- Buttons -->
+  <div class="flex space-x-4 mt-4">
+    <button id="submitPaste" class="px-6 py-2 bg-purple-500 hover:bg-purple-600 rounded font-semibold transition">
+      Create Paste
+    </button>
+    <button id="clearPaste" class="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded font-semibold transition">
+      Clear
+    </button>
+    <button id="text" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 transition">
+        Image
+    </button>
+  </div>
+
+    <script>
+  const button = document.getElementById('text');
+
+  button.addEventListener('click', () => {
+    // Change this URL to the page you want to redirect to
+    window.location.href = '/index.html';
+  });
+</script>
+
+  <!-- Result -->
+  <div id="pasteResult" class="mt-6 w-full max-w-2xl p-4 bg-gray-900/60 border border-gray-700 rounded text-purple-400 break-words hidden">
+    Your paste URL: <a id="pasteLink" href="#" class="underline text-blue-400" target="_blank"></a><br>
+    Raw: <a id="pasteRawLink" href="#" class="underline text-green-400" target="_blank"></a>
+  </div>
+
+  <script>
+    const submitBtn = document.getElementById("submitPaste");
+    const clearBtn = document.getElementById("clearPaste");
+    const pasteContent = document.getElementById("pasteContent");
+    const pasteResult = document.getElementById("pasteResult");
+    const pasteLink = document.getElementById("pasteLink");
+    const pasteRawLink = document.getElementById("pasteRawLink");
+    const expireSelect = document.getElementById("expireSelect");
+
+    submitBtn.addEventListener("click", async () => {
+      const text = pasteContent.value.trim();
+      const expire = expireSelect.value;
+
+      if (!text) return alert("Paste cannot be empty!");
+
+      const formData = new FormData();
+      formData.append("content", text);
+      formData.append("expire", expire);
+
+      try {
+        const res = await fetch("save_paste.php", {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          pasteResult.classList.remove("hidden");
+          pasteLink.href = `${window.location.origin}/${data.id}`;
+          pasteLink.textContent = `${window.location.origin}/${data.id}`;
+          pasteRawLink.href = `${window.location.origin}/r/${data.id}`;
+          pasteRawLink.textContent = `${window.location.origin}/r/${data.id}`;
+
+          // 🔹 Clear the textarea after successful paste
+          pasteContent.value = '';
+        } else {
+          alert("Error saving paste: " + (data.error || "Unknown error"));
+        }
+      } catch (err) {
+        alert("Request failed: " + err.message);
+      }
+    });
+
+    clearBtn.addEventListener("click", () => {
+      pasteContent.value = "";
+      pasteResult.classList.add("hidden");
+    });
+  </script>
+
+</body>
+</html>
