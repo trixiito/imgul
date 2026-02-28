@@ -347,8 +347,9 @@ updateVisitorCount();
               copyBtn.innerText = "Copy";
               copyBtn.className = "ml-4 flex-shrink-0 text-purple-400 hover:text-purple-600";
               copyBtn.onclick = () => {
-                navigator.clipboard.writeText(WEBSITE_URL + fileData.url);
-                alert(`${fileData.file} link copied!`);
+              const fullURL = window.location.origin + WEBSITE_URL + fileData.url;
+              navigator.clipboard.writeText(fullURL);
+              alert(`${fileData.file} link copied!`);
               };
 
               fileCard.appendChild(thumb);
@@ -357,7 +358,9 @@ updateVisitorCount();
               uploadedFilesDiv.appendChild(fileCard);
 
               // Auto-copy the link after upload
-              navigator.clipboard.writeText(WEBSITE_URL + fileData.url);
+              navigator.clipboard.writeText(
+                window.location.origin + WEBSITE_URL + fileData.url
+              );
             } else {
               alert(fileData.reason || "Upload failed for " + fileData.file);
             }
