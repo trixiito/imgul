@@ -302,95 +302,139 @@ updateVisitorCount();
       document.body.classList.toggle("dark-theme");
     };
 
-    uploadBtn.addEventListener("click", () => {
-      if (selectedFiles.length === 0) return;
-      uploadBtn.innerText = "Uploading...";
-      uploadBtn.disabled = true;
+uploadBtn.addEventListener("click", async () => {
 
-      const formData = new FormData();
-      selectedFiles.forEach(file => formData.append("files[]", file));
+  if (selectedFiles.length === 0) return;
 
-      // Get Turnstile token
-      const tokenField = document.querySelector('[name="cf-turnstile-response"]');
+  uploadBtn.innerText = "Verifying...";
+  uploadBtn.disabled = true;
 
-      if (!tokenField || !tokenField.value) {
-        alert("Please verify you are human.");
-        uploadBtn.innerText = "Upload Files";
-        uploadBtn.disabled = false;
-        return;
-      }
+  // Get Turnstile token
+  const token = turnstile.getResponse();
 
-      formData.append("cf-turnstile-response", tokenField.value);
+  if (!token) {
+    alert("Please complete verification.");
+    uploadBtn.innerText = "Upload Files";
+    uploadBtn.disabled = false;
+    return;
+  }
 
-      const totalSize = selectedFiles.reduce((sum, f) => sum + f.size, 0);
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/upload");
+  uploadBtn.innerText = "Uploading...";
 
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          let loaded = e.loaded;
-          selectedFiles.forEach((file, index) => {
-            const bar = document.getElementById(`progress-${index}`);
-            const filePortion = file.size / totalSize;
-            const fileProgress = Math.min((loaded / totalSize) / filePortion * 100, 100);
-            if (bar) bar.style.width = fileProgress + "%";
-            loaded -= file.size;
-          });
+  const formData = new FormData();
+  selectedFiles.forEach(file => formData.append("files[]", file));
+
+  // Send token to backend
+  formData.append("cf-turnstile-response", token);
+
+  const totalSize = selectedFiles.reduce((sum, f) => sum + f.size, 0);
+
+  const xhr = new XMLHttpRequest();
+  xhr.open("POST", "/upload");
+
+  xhr.upload.onprogress = (e) => {
+    if (e.lengthComputable) {
+      let loaded = e.loaded;
+
+      selectedFiles.forEach((file, index) => {
+        const bar = document.getElementById(`progress-${index}`);
+        if (!bar) return;
+
+        const filePortion = file.size / totalSize;
+        const fileProgress = Math.min(
+          (loaded / totalSize) / filePortion * 100,
+          100
+        );
+
+        bar.style.width = fileProgress + "%";
+        loaded -= file.size;
+      });
+    }
+  };
+
+  xhr.onload = () => {
+
+    uploadBtn.innerText = "Upload Files";
+    uploadBtn.disabled = false;
+
+    if (xhr.status !== 200) {
+      alert("Upload failed.");
+      turnstile.reset();
+      return;
+    }
+
+    const result = JSON.parse(xhr.responseText);
+
+    if (result.files && result.files.length > 0) {
+      result.files.forEach((fileData) => {
+
+        if (fileData.status === "success") {
+
+          const fileCard = document.createElement("div");
+          fileCard.className =
+            "p-4 bg-gray-900/60 border border-gray-700 shadow-md flex items-center transform transition-transform hover:scale-105";
+
+          const thumb = document.createElement("img");
+          thumb.src = WEBSITE_URL + fileData.url;
+          thumb.className =
+            "w-16 h-16 object-cover mr-4 flex-shrink-0";
+
+          const info = document.createElement("div");
+          info.className = "flex-1 min-w-0";
+          info.innerHTML = `
+            <p class="text-gray-200 truncate">${fileData.file}</p>
+            <a href="${WEBSITE_URL + fileData.url}" target="_blank"
+               class="text-blue-400 underline truncate block">
+              View
+            </a>
+          `;
+
+          const copyBtn = document.createElement("button");
+          copyBtn.innerText = "Copy";
+          copyBtn.className =
+            "ml-4 flex-shrink-0 text-purple-400 hover:text-purple-600";
+
+          copyBtn.onclick = () => {
+            const fullURL =
+              window.location.origin + WEBSITE_URL + fileData.url;
+            navigator.clipboard.writeText(fullURL);
+            alert("Link copied!");
+          };
+
+          fileCard.appendChild(thumb);
+          fileCard.appendChild(info);
+          fileCard.appendChild(copyBtn);
+          uploadedFilesDiv.appendChild(fileCard);
+
+          // Auto copy
+          navigator.clipboard.writeText(
+            window.location.origin + WEBSITE_URL + fileData.url
+          );
+
+        } else {
+          alert("Upload failed.");
         }
-      };
 
-      xhr.onload = () => {
-        const result = JSON.parse(xhr.responseText);
-        if (result.files && result.files.length > 0) {
-          result.files.forEach((fileData) => {
-            if (fileData.status === "success") {
-              const fileCard = document.createElement("div");
-              fileCard.className = "p-4 bg-gray-900/60 border border-gray-700 shadow-md flex items-center transform transition-transform hover:scale-105";
+      });
+    }
 
-              const thumb = document.createElement("img");
-              thumb.src = WEBSITE_URL + fileData.url;
-              thumb.className = "w-16 h-16 object-cover mr-4 flex-shrink-0";
+    // Reset Turnstile for next upload
+    turnstile.reset();
 
-              const info = document.createElement("div");
-              info.className = "flex-1 min-w-0";
-              info.innerHTML = `
-                <p class="text-gray-200 truncate">${fileData.file}</p>
-                <a href="${WEBSITE_URL + fileData.url}" target="_blank" class="text-blue-400 underline truncate block">View</a>
-              `;
+    selectedFiles = [];
+    fileInput.value = "";
+    fileList.innerHTML = "";
+  };
 
-              const copyBtn = document.createElement("button");
-              copyBtn.innerText = "Copy";
-              copyBtn.className = "ml-4 flex-shrink-0 text-purple-400 hover:text-purple-600";
-              copyBtn.onclick = () => {
-              const fullURL = window.location.origin + WEBSITE_URL + fileData.url;
-              navigator.clipboard.writeText(fullURL);
-              alert(`${fileData.file} link copied!`);
-              };
+  xhr.onerror = () => {
+    alert("Upload error.");
+    uploadBtn.innerText = "Upload Files";
+    uploadBtn.disabled = false;
+    turnstile.reset();
+  };
 
-              fileCard.appendChild(thumb);
-              fileCard.appendChild(info);
-              fileCard.appendChild(copyBtn);
-              uploadedFilesDiv.appendChild(fileCard);
-
-              // Auto-copy the link after upload
-              navigator.clipboard.writeText(
-                window.location.origin + WEBSITE_URL + fileData.url
-              );
-            } else {
-              alert(fileData.reason || "Upload failed for " + fileData.file);
-            }
-          });
-        }
-
-        selectedFiles = [];
-        uploadBtn.innerText = "Upload Files";
-        uploadBtn.disabled = false;
-        fileInput.value = "";
-        fileList.innerHTML = "";
-      };
-
-      xhr.send(formData);
-    });
+  xhr.send(formData);
+});
   </script>
 
 </body>
