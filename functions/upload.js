@@ -50,7 +50,10 @@ export async function onRequest(context) {
     const verifyData = await verifyResponse.json();
 
     if (!verifyData.success) {
-      return new Response(JSON.stringify({ error: "Captcha failed" }), {
+  return new Response(JSON.stringify({
+    error: "Captcha failed",
+    details: verifyData
+  }), {
         status: 403,
         headers: { "Content-Type": "application/json" }
       });
