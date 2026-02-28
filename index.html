@@ -6,6 +6,7 @@
   <title>ImgUL-The Ultimate IMGHOST</title>
   <link href="https://fonts.googleapis.com/css2?family=New+Rocker&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
   <style>
     /* Light theme overrides */
     body.light-theme {
@@ -91,7 +92,11 @@ window.addEventListener('DOMContentLoaded', updateVisitorCount);
 
     <!-- File List with Preview and Progress -->
     <div id="fileList" class="mt-6 w-full max-w-2xl space-y-3"></div>
-
+<div class="mt-4 flex justify-center">
+  <div class="cf-turnstile"
+       data-sitekey="0x4AAAAAACj-jvPofkfLh_LL">
+  </div>
+</div>
     <!-- Upload Button -->
     <button
       id="uploadBtn"
@@ -304,6 +309,18 @@ updateVisitorCount();
 
       const formData = new FormData();
       selectedFiles.forEach(file => formData.append("files[]", file));
+
+      // Get Turnstile token
+      const tokenField = document.querySelector('[name="cf-turnstile-response"]');
+
+      if (!tokenField || !tokenField.value) {
+        alert("Please verify you are human.");
+        uploadBtn.innerText = "Upload Files";
+        uploadBtn.disabled = false;
+        return;
+      }
+
+      formData.append("cf-turnstile-response", tokenField.value);
 
       const totalSize = selectedFiles.reduce((sum, f) => sum + f.size, 0);
       const xhr = new XMLHttpRequest();

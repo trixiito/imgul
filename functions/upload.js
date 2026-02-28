@@ -2,16 +2,14 @@ export async function onRequest(context) {
 
   const { request, env } = context;
 
-  // CORS headers
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "*"
-  };
-
-  // Handle preflight (XHR sends OPTIONS)
   if (request.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "*"
+      }
+    });
   }
 
   if (request.method !== "POST") {
@@ -19,68 +17,79 @@ export async function onRequest(context) {
   }
 
   try {
-    const formData = await request.formData();
-    const files = formData.getAll("files[]");
 
-    if (!files || files.length === 0) {
-      return new Response(JSON.stringify({ error: "No files uploaded" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders }
-      });
+    const formData = await request.formData();
+    const token = formData.get("cf-turnstile-response");
+
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Verification required" }), { status: 403 });
     }
 
-    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "image/gif"
-    ];
+    // 🔐 VERIFY TURNSTILE
+    const verify = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body: new URLSearchParams({
+        secret: env.TURNSTILE_SECRET,
+        response: token,
+        remoteip: request.headers.get("CF-Connecting-IP")
+      })
+    });
 
-    const extensionMap = {
-      "image/jpeg": "jpg",
-      "image/png": "png",
-      "image/webp": "webp",
-      "image/gif": "gif"
-    };
+    const result = await verify.json();
 
+    if (!result.success) {
+      return new Response(JSON.stringify({ error: "Bot verification failed" }), { status: 403 });
+    }
+
+    // 🚫 Rate limit (20 uploads per minute per IP)
+    const ip = request.headers.get("CF-Connecting-IP");
+    const rateKey = `rate:${ip}`;
+    const count = await env.COUNTER.get(rateKey);
+
+    if (count && Number(count) >= 20) {
+      return new Response("Too many uploads. Try again later.", { status: 429 });
+    }
+
+    await env.COUNTER.put(rateKey, (Number(count || 0) + 1).toString(), {
+      expirationTtl: 60
+    });
+
+    const files = formData.getAll("files[]");
     let results = [];
 
     for (const file of files) {
 
-      // 🔒 Enforce type
+      // 10MB hard limit
+      if (file.size > 10 * 1024 * 1024) {
+        return new Response(JSON.stringify({ error: "File too large (max 10MB)" }), { status: 400 });
+      }
+
+      const allowedTypes = ["image/jpeg","image/png","image/webp","image/gif"];
+
       if (!allowedTypes.includes(file.type)) {
-        return new Response(JSON.stringify({
-          error: `Invalid file type: ${file.type}`
-        }), {
-          status: 415,
-          headers: { "Content-Type": "application/json", ...corsHeaders }
-        });
+        return new Response(JSON.stringify({ error: "Invalid file type" }), { status: 400 });
       }
 
-      // 🔒 Enforce size
-      if (file.size > MAX_SIZE) {
-        return new Response(JSON.stringify({
-          error: `${file.name} exceeds 10MB limit`
-        }), {
-          status: 413,
-          headers: { "Content-Type": "application/json", ...corsHeaders }
-        });
-      }
+      // Small random name
+      const id = crypto.randomUUID().replace(/-/g, "").slice(0, 8);
 
-      // 🔥 Generate short random ID (6 characters)
-      const id = generateId(6);
+      const extensionMap = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp",
+        "image/gif": "gif"
+      };
+
       const extension = extensionMap[file.type];
       const key = `${id}.${extension}`;
 
-      // Save to R2
       await env.IMAGES.put(key, file.stream(), {
         httpMetadata: { contentType: file.type }
       });
 
       results.push({
         status: "success",
-        file: file.name,
+        file: key,
         url: key
       });
     }
@@ -88,7 +97,7 @@ export async function onRequest(context) {
     return new Response(JSON.stringify({ files: results }), {
       headers: {
         "Content-Type": "application/json",
-        ...corsHeaders
+        "Access-Control-Allow-Origin": "*"
       }
     });
 
@@ -98,15 +107,4 @@ export async function onRequest(context) {
       headers: { "Content-Type": "application/json" }
     });
   }
-}
-
-
-// 🔹 Small random ID generator
-function generateId(length = 7) {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i = 0; i < length; i++) {
-    result += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return result;
 }
