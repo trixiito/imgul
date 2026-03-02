@@ -131,7 +131,7 @@ class="flex justify-center gap-12 bg-surface rounded-lg px-6 py-4 border border-
 </main>
 
 <script>
-/* ===== ORIGINAL FUNCTIONALITY (UNCHANGED) ===== */
+/* ===== FIXED & SAFE VERSION ===== */
 
 const fileInput = document.getElementById("fileUpload");
 const fileList = document.getElementById("fileList");
@@ -147,186 +147,242 @@ const ALLOWED_TYPES = ['image/jpeg','image/png','image/gif','image/webp'];
 const WEBSITE_URL = "/i/";
 let selectedFiles = [];
 
+/* Theme toggle untouched */
 themeToggle.onclick = () => {
-document.documentElement.classList.toggle("dark");
+  document.documentElement.classList.toggle("dark");
 };
 
-/* Visitor Counter */
+/* ---------------- Visitor Counter ---------------- */
+
 let prevUnique = 0;
 
 function glowCard() {
-const card = document.getElementById('visitorCard');
-card.classList.add('ring-4','ring-green-400');
-setTimeout(()=>card.classList.remove('ring-4','ring-green-400'),1000);
+  const card = document.getElementById('visitorCard');
+  card.classList.add('ring-4','ring-green-400');
+  setTimeout(()=>card.classList.remove('ring-4','ring-green-400'),1000);
 }
 
 function confetti() {
-for(let i=0;i<20;i++){
-const c=document.createElement('div');
-c.className='absolute w-1 h-1 bg-yellow-400 rounded-full animate-fall';
-c.style.left=Math.random()*window.innerWidth+'px';
-c.style.top='-10px';
-document.body.appendChild(c);
-setTimeout(()=>c.remove(),1500);
-}
+  for(let i=0;i<20;i++){
+    const c=document.createElement('div');
+    c.className='absolute w-1 h-1 bg-yellow-400 rounded-full animate-fall';
+    c.style.left=Math.random()*window.innerWidth+'px';
+    c.style.top='-10px';
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),1500);
+  }
 }
 
 function updateVisitorCount(){
-fetch('/counter')
-.then(r=>r.json())
-.then(data=>{
-if(data.unique>prevUnique){ glowCard(); confetti(); }
-document.getElementById('totalViews').innerText=data.total;
-document.getElementById('uniqueViews').innerText=data.unique;
-prevUnique=data.unique;
-});
+  fetch('/counter')
+    .then(r => r.json())
+    .then(data=>{
+      if(!data || typeof data.unique !== "number") return;
+
+      if(data.unique > prevUnique){
+        glowCard();
+        confetti();
+      }
+
+      document.getElementById('totalViews').innerText = data.total ?? 0;
+      document.getElementById('uniqueViews').innerText = data.unique ?? 0;
+      prevUnique = data.unique;
+    })
+    .catch(()=>console.log("Counter unavailable"));
 }
+
 updateVisitorCount();
 
-/* File Handling */
+/* ---------------- File Handling ---------------- */
 
 function updateFileList(){
-fileList.innerHTML="";
-selectedFiles.forEach((file,index)=>{
-const div=document.createElement("div");
-div.className="bg-surface border border-white/10 rounded-lg p-4";
+  fileList.innerHTML="";
 
-div.innerHTML=`
-<img src="${URL.createObjectURL(file)}" class="w-full h-32 object-cover rounded mb-3"/>
-<p class="text-sm truncate">${file.name}</p>
-<div class="w-full bg-slate-700 h-2 mt-2 rounded">
-<div id="progress-${index}" class="h-2 bg-primary rounded" style="width:0%"></div>
-</div>
-<button class="text-red-400 text-xs mt-2">Remove</button>
-`;
+  selectedFiles.forEach((file,index)=>{
+    const div=document.createElement("div");
+    div.className="bg-surface border border-white/10 rounded-lg p-4";
 
-div.querySelector("button").onclick=()=>{
-selectedFiles.splice(index,1);
-updateFileList();
-};
+    div.innerHTML=`
+      <img src="${URL.createObjectURL(file)}" class="w-full h-32 object-cover rounded mb-3"/>
+      <p class="text-sm truncate">${file.name}</p>
+      <div class="w-full bg-slate-700 h-2 mt-2 rounded">
+        <div id="progress-${index}" class="h-2 bg-primary rounded" style="width:0%"></div>
+      </div>
+      <button class="text-red-400 text-xs mt-2">Remove</button>
+    `;
 
-fileList.appendChild(div);
-});
-uploadBtn.classList.toggle("hidden",selectedFiles.length===0);
+    div.querySelector("button").onclick=()=>{
+      selectedFiles.splice(index,1);
+      updateFileList();
+    };
+
+    fileList.appendChild(div);
+  });
+
+  uploadBtn.classList.toggle("hidden",selectedFiles.length===0);
 }
 
 function handleFiles(files){
-Array.from(files).forEach(file=>{
-if(!ALLOWED_TYPES.includes(file.type)) return alert(file.name+" invalid type");
-if(file.size>MAX_SIZE) return alert(file.name+" exceeds 10MB");
-selectedFiles.push(file);
-});
-updateFileList();
+  Array.from(files).forEach(file=>{
+    if(!ALLOWED_TYPES.includes(file.type)){
+      alert(file.name+" invalid type");
+      return;
+    }
+    if(file.size > MAX_SIZE){
+      alert(file.name+" exceeds 10MB");
+      return;
+    }
+    selectedFiles.push(file);
+  });
+
+  updateFileList();
 }
 
 fileInput.addEventListener("change",e=>handleFiles(e.target.files));
 dropArea.addEventListener("click",()=>fileInput.click());
 dropArea.addEventListener("dragover",e=>e.preventDefault());
 dropArea.addEventListener("drop",e=>{
-e.preventDefault();
-handleFiles(e.dataTransfer.files);
+  e.preventDefault();
+  handleFiles(e.dataTransfer.files);
 });
 
-clearAllBtn.onclick=()=>uploadedFilesDiv.innerHTML="";
-copyAllBtn.onclick=()=>{
-const links=Array.from(uploadedFilesDiv.querySelectorAll("a")).map(a=>a.href).join("\n");
-if(links.length){
-navigator.clipboard.writeText(links);
-alert("All links copied!");
-}else alert("No uploaded files.");
+/* ---------------- Clear & Copy ---------------- */
+
+clearAllBtn.onclick=()=>{
+  uploadedFilesDiv.innerHTML="";
+  selectedFiles=[];
+  fileList.innerHTML="";
+  uploadBtn.classList.add("hidden");
+  fileInput.value="";
 };
 
-/* Upload logic unchanged */
+copyAllBtn.onclick=()=>{
+  const links = Array.from(uploadedFilesDiv.querySelectorAll("a"))
+    .map(a=>a.href)
+    .join("\n");
+
+  if(!links){
+    alert("No uploaded files.");
+    return;
+  }
+
+  navigator.clipboard.writeText(links)
+    .then(()=>alert("All links copied!"))
+    .catch(()=>alert("Clipboard failed."));
+};
+
+/* ---------------- Upload Logic ---------------- */
 
 uploadBtn.addEventListener("click",()=>{
-if(!selectedFiles.length) return;
+  if(!selectedFiles.length) return;
 
-uploadBtn.innerText="Uploading...";
-uploadBtn.disabled=true;
+  uploadBtn.innerText="Uploading...";
+  uploadBtn.disabled=true;
 
-const formData=new FormData();
-selectedFiles.forEach(f=>formData.append("files[]",f));
-const totalSize=selectedFiles.reduce((s,f)=>s+f.size,0);
+  const formData=new FormData();
+  selectedFiles.forEach(f=>formData.append("files[]",f));
 
-const xhr=new XMLHttpRequest();
-xhr.open("POST","/upload");
+  const xhr=new XMLHttpRequest();
+  xhr.open("POST","/upload");
 
-xhr.upload.onprogress=e=>{
-if(e.lengthComputable){
-let loaded=e.loaded;
-selectedFiles.forEach((file,index)=>{
-const bar=document.getElementById(`progress-${index}`);
-const portion=file.size/totalSize;
-const percent=Math.min((loaded/totalSize)/portion*100,100);
-if(bar) bar.style.width=percent+"%";
-loaded-=file.size;
+  /* FIXED PROGRESS (accurate & safe) */
+  xhr.upload.onprogress=e=>{
+    if(e.lengthComputable){
+      const percent=(e.loaded/e.total)*100;
+      selectedFiles.forEach((_,index)=>{
+        const bar=document.getElementById(`progress-${index}`);
+        if(bar) bar.style.width=percent+"%";
+      });
+    }
+  };
+
+  xhr.onerror=()=>{
+    alert("Upload failed. Please try again.");
+    resetUploadState();
+  };
+
+  xhr.onload=()=>{
+    if(xhr.status < 200 || xhr.status >= 300){
+      alert("Server error: "+xhr.status);
+      resetUploadState();
+      return;
+    }
+
+    let result;
+    try{
+      result=JSON.parse(xhr.responseText);
+    }catch{
+      alert("Invalid server response");
+      resetUploadState();
+      return;
+    }
+
+    if(!result || !Array.isArray(result.files)){
+      alert("Unexpected server format");
+      resetUploadState();
+      return;
+    }
+
+    const uploadedLinks=[];
+
+    result.files.forEach(fileData=>{
+      if(fileData.status==="success" && fileData.url){
+        const fullURL=window.location.origin+WEBSITE_URL+fileData.url;
+        uploadedLinks.push(fullURL);
+
+        const card=document.createElement("div");
+        card.className="bg-surface border border-white/10 rounded-lg p-4";
+
+        card.innerHTML=`
+          <img src="${WEBSITE_URL+fileData.url}" class="w-full h-32 object-cover rounded mb-3"/>
+          <p class="text-sm truncate mb-1">${fileData.file}</p>
+          <a href="${fullURL}" target="_blank" class="text-primary text-sm underline block mb-2">View</a>
+          <button class="bg-primary text-white px-3 py-1 rounded text-xs">Copy</button>
+        `;
+
+        card.querySelector("button").onclick=()=>{
+          navigator.clipboard.writeText(fullURL)
+            .then(()=>alert("Link copied!"))
+            .catch(()=>alert("Clipboard failed."));
+        };
+
+        uploadedFilesDiv.appendChild(card);
+      }
+    });
+
+    if(uploadedLinks.length){
+      navigator.clipboard.writeText(uploadedLinks.join("\n"))
+        .catch(()=>{});
+    }
+
+    selectedFiles=[];
+    fileList.innerHTML="";
+    fileInput.value="";
+    resetUploadState();
+  };
+
+  xhr.send(formData);
 });
-}
-};
 
-xhr.onload = () => {
-let result;
-try { result = JSON.parse(xhr.responseText); }
-catch { alert("Invalid server response"); return; }
-
-if (!result || !Array.isArray(result.files)) {
-alert("Unexpected server format");
-return;
+function resetUploadState(){
+  uploadBtn.innerText="Upload Files";
+  uploadBtn.disabled=false;
 }
 
-result.files.forEach(fileData=>{
-if(fileData.status==="success" && fileData.url){
-const fullURL=window.location.origin+WEBSITE_URL+fileData.url;
-const card=document.createElement("div");
-card.className="bg-surface border border-white/10 rounded-lg p-4";
+/* ---------------- Paste Upload ---------------- */
 
-card.innerHTML=`
-<img src="${WEBSITE_URL+fileData.url}" class="w-full h-32 object-cover rounded mb-3"/>
-<p class="text-sm truncate mb-1">${fileData.file}</p>
-<a href="${fullURL}" target="_blank" class="text-primary text-sm underline block mb-2">View</a>
-<button class="bg-primary text-white px-3 py-1 rounded text-xs">Copy</button>
-`;
+document.addEventListener("paste",(event)=>{
+  const items=event.clipboardData?.items;
+  if(!items) return;
 
-card.querySelector("button").onclick=()=>{
-navigator.clipboard.writeText(fullURL);
-alert("Link copied!");
-};
-
-uploadedFilesDiv.appendChild(card);
-navigator.clipboard.writeText(fullURL);
-}
-});
-
-selectedFiles=[];
-fileList.innerHTML="";
-uploadBtn.innerText="Upload Files";
-uploadBtn.disabled=false;
-fileInput.value="";
-};
-
-xhr.send(formData);
-});
-/* Ctrl + V Paste Upload (Added) */
-document.addEventListener("paste", (event) => {
-
-  const items = event.clipboardData?.items;
-  if (!items) return;
-
-  for (const item of items) {
-
-    if (item.type.startsWith("image/")) {
-
-      const file = item.getAsFile();
-      if (!file) return;
+  for(const item of items){
+    if(item.type.startsWith("image/")){
+      const file=item.getAsFile();
+      if(!file) return;
 
       event.preventDefault();
-
-      // Reuse existing validation + queue logic
       handleFiles([file]);
-
-      // Auto trigger upload
       uploadBtn.click();
-
       break;
     }
   }
