@@ -1,378 +1,384 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ImgUL-The Ultimate IMGHOST</title>
-  <link href="https://fonts.googleapis.com/css2?family=New+Rocker&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    /* Light theme overrides */
-    body.light-theme {
-      background: linear-gradient(to bottom right, #f3f4f6, #e5e7eb);
-      color: #111827;
-    }
-    body.light-theme .bg-gray-900\/60 { background-color: rgba(243, 244, 246, 0.6); }
-    body.light-theme .text-gray-200 { color: #1f2937; }
-    body.light-theme .text-gray-400 { color: #4b5563; }
-    body.light-theme .border-gray-700 { border-color: #d1d5db; }
-  </style>
-</head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ImgUL - Image Hosting</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+
 <script>
-function updateVisitorCount() {
-  fetch('/counter')
-    .then(res => res.json())
-    .then(data => {
-      const totalElem = document.getElementById('totalViews');
-      const uniqueElem = document.getElementById('uniqueViews');
-      if (totalElem && uniqueElem) {
-        totalElem.innerText = data.total;
-        uniqueElem.innerText = data.unique;
-      }
-    })
-    .catch(err => console.error('Visitor count error:', err));
+tailwind.config = {
+darkMode: "class",
+theme: {
+extend: {
+colors: {
+primary: "#A855F7",
+secondary: "#06B6D4",
+surface: "#171717",
+backgroundDark: "#0a0a0a"
+},
+fontFamily: {
+display: ["Space Grotesk","sans-serif"],
+body: ["Inter","sans-serif"]
 }
-
-window.addEventListener('DOMContentLoaded', updateVisitorCount);
-
+}
+}
+}
 </script>
 
-<body class="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white dark-theme">
+<style>
+body { font-family:'Inter',sans-serif; }
+h1,h2,h3 { font-family:'Space Grotesk',sans-serif; }
+.glass-nav { background: rgba(10,10,10,.7); backdrop-filter: blur(12px); }
 
-  <header class="flex justify-between items-center p-6">
-    <div class="flex items-center space-x-2">
-      <div class="w-8 h-8 bg-gradient-to-r from-pink-500 to-purple-500"></div>
-      <span class="text-xl font-bold">ImgUL</span>
-    </div>
-    <div class="flex space-x-2">
-      <button id="text" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 transition">
-        Text
-      </button>
-      <button id="themeToggle" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 transition">
-        Theme
-      </button>
-    </div>
-  </header>
+@keyframes fall {
+0% { transform:translateY(0) rotate(0deg); opacity:1; }
+100% { transform:translateY(150px) rotate(360deg); opacity:0; }
+}
+.animate-fall { animation: fall 1.5s ease-out forwards; }
+</style>
+</head>
 
-  <script>
-  const button = document.getElementById('text');
+<body class="bg-backgroundDark text-slate-100 min-h-screen flex flex-col">
 
-  button.addEventListener('click', () => {
-    window.location.href = '/text.html';
-  });
-</script>
+<!-- HEADER -->
+<header class="fixed top-0 left-0 right-0 z-50 glass-nav border-b border-white/10">
+<div class="max-w-6xl mx-auto px-6 flex justify-between items-center h-16">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-[20px]">cloud_upload</span>
+</div>
+<span class="text-xl font-bold">ImgUL</span>
+</div>
+<button id="themeToggle" class="p-2 rounded-full hover:bg-white/10">
+<span class="material-symbols-outlined">dark_mode</span>
+</button>
+</div>
+</header>
 
-  <section class="flex flex-col items-center text-center py-16 px-6">
-    <h1 class="text-4xl md:text-7xl font-extrabold bg-gradient-to-r from-blue-400 to-pink-500 bg-clip-text text-transparent"
-        style="font-family: 'New Rocker', Courier, monospace;">
-      Ultimate free imgHOST
-    </h1>
-  </section>
+<main class="relative z-10 pt-24 pb-10 px-6 max-w-6xl mx-auto flex flex-col gap-8">
 
-  <section class="flex flex-col items-center px-6 pb-20">
-    <div id="dropArea" class="w-full max-w-2xl p-8 border-2 border-dashed border-purple-500/40 bg-gray-900/60 text-center cursor-pointer hover:border-purple-400 transition">
-      <input type="file" multiple class="hidden" id="fileUpload" />
-      <label for="fileUpload" class="block">
-        <p class="text-xl font-semibold text-purple-400">Drag & Drop your files here</p>
-        <p class="text-gray-400 mt-2">or click to select files</p>
-      </label>
-    </div>
+<!-- HERO -->
+<div class="text-center">
+<h1 class="text-5xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60">
+Image Hosting <span class="text-primary">Simplified</span>
+</h1>
+<p class="text-slate-400 text-base mt-2">
+Drag, drop and deliver instantly.
+</p>
+</div>
 
+<!-- DROP AREA -->
+<div class="relative group max-w-3xl mx-auto w-full">
+<div class="absolute -inset-0.5 bg-gradient-to-r from-primary to-secondary rounded-xl blur opacity-30"></div>
 
+<div id="dropArea"
+class="relative bg-surface border border-white/10 rounded-xl p-8 text-center flex flex-col items-center gap-4 cursor-pointer">
 
+<input type="file" id="fileUpload" multiple class="hidden">
 
-    <div id="fileList" class="mt-6 w-full max-w-2xl space-y-3"></div>
+<div class="size-16 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl text-primary">cloud_upload</span>
+</div>
 
-    <button
-      id="uploadBtn"
-      class="hidden mt-6 px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 font-semibold hover:opacity-90 transition disabled:opacity-50">
-      Upload Files
-    </button>
+<h3 class="text-xl font-bold">Drop or Paste images to upload</h3>
+<p class="text-slate-400 text-sm">or click to browse (Max 10MB)</p>
+</div>
+</div>
 
-    <div class="mt-4 flex space-x-4">
-      <button id="clearAllBtn" class="px-4 py-2 bg-[#62A3F8] hover:bg-[#9E7DD0] transition text-black">
-        Clear All
-      </button>
-      <button id="copyAllBtn" class="px-4 py-2 bg-[#E74C9D] hover:bg-[#B76CBE] transition text-[#1e1e3a]">
-        Copy All Links
-      </button>
-    </div>
+<!-- FILE QUEUE -->
+<div id="fileList" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto"></div>
 
-    <div id="uploadedFiles" class="mt-6 w-full max-w-2xl grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-  </section>
+<!-- BUTTON ROW -->
+<div class="flex justify-center gap-4 flex-wrap mt-2">
+<button id="uploadBtn"
+class="hidden bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white px-8 py-3 rounded-lg font-semibold transition">
+Upload Files
+</button>
 
-  <section class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto px-6 pb-20">
-    <div class="p-6 bg-gray-900/60 border border-gray-700 shadow-lg hover:shadow-purple-500/40 transform transition-transform hover:scale-105">
-      <h3 class="text-xl font-semibold text-purple-400">Unlimited Storage</h3>
-      <p class="mt-2 text-gray-400">Store images of size upto 10 MB.</p>
-    </div>
-    <div class="p-6 bg-gray-900/60 border border-gray-700 shadow-lg hover:shadow-purple-500/40 transform transition-transform hover:scale-105">
-      <h3 class="text-xl font-semibold text-purple-400">Lightning Fast</h3>
-      <p class="mt-2 text-gray-400">Experience rapid upload & download speeds.</p>
-    </div>
-    <div class="p-6 bg-gray-900/60 border border-gray-700 shadow-lg hover:shadow-purple-500/40 transform transition-transform hover:scale-105">
-      <h3 class="text-xl font-semibold text-purple-400">Secure Transfers</h3>
-      <p class="mt-2 text-gray-400">End-to-end encryption for all Images.</p>
-    </div>
-  </section>
+<button id="clearAllBtn"
+class="px-5 py-2 bg-primary/20 hover:bg-primary/40 rounded-lg border border-primary/30 text-sm">
+Clear All
+</button>
 
-<section class="max-w-6xl mx-auto px-6 pb-6">
-  <div class="flex justify-center space-x-10 bg-gray-900/50 backdrop-blur-md py-3 px-6 shadow-md text-white text-sm font-medium shadow-lg hover:shadow-purple-500/40 transform transition-transform ">
-    <div class="flex items-center space-x-2">
-      <span class="text-gray-400">Total Views:</span>
-      <span id="totalViews" class="text-purple-400 font-bold">0</span>
-    </div>
-    <div class="flex items-center space-x-2">
-      <span class="text-gray-400">Unique Views:</span>
-      <span id="uniqueViews" class="text-pink-400 font-bold">0</span>
-    </div>
-  </div>
+<button id="copyAllBtn"
+class="px-5 py-2 bg-secondary/20 hover:bg-secondary/40 rounded-lg border border-secondary/30 text-sm">
+Copy All Links
+</button>
+</div>
+
+<!-- UPLOADED -->
+<div id="uploadedFiles" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto"></div>
+
+<!-- VISITOR -->
+<section class="max-w-4xl mx-auto pt-4">
+<div id="visitorCard"
+class="flex justify-center gap-12 bg-surface rounded-lg px-6 py-4 border border-white/10 text-sm">
+<div>
+<p class="uppercase text-slate-500 text-xs">Total</p>
+<p id="totalViews" class="font-bold text-primary text-base">0</p>
+</div>
+<div>
+<p class="uppercase text-slate-500 text-xs">Unique</p>
+<p id="uniqueViews" class="font-bold text-secondary text-base">0</p>
+</div>
+</div>
 </section>
 
+</main>
 
 <script>
-let prevTotal = 0;
+const fileInput = document.getElementById("fileUpload");
+const fileList = document.getElementById("fileList");
+const uploadBtn = document.getElementById("uploadBtn");
+const dropArea = document.getElementById("dropArea");
+const uploadedFilesDiv = document.getElementById("uploadedFiles");
+const clearAllBtn = document.getElementById("clearAllBtn");
+const copyAllBtn = document.getElementById("copyAllBtn");
+const themeToggle = document.getElementById("themeToggle");
+
+const MAX_SIZE = 10 * 1024 * 1024;
+const ALLOWED_TYPES = ['image/jpeg','image/png','image/gif','image/webp'];
+const WEBSITE_URL = "/i/";
+let selectedFiles = [];
+
+themeToggle.onclick = () => {
+  document.documentElement.classList.toggle("dark");
+};
+
+
 let prevUnique = 0;
 
 function glowCard() {
   const card = document.getElementById('visitorCard');
-  card.classList.add('ring-4', 'ring-green-400');
-  setTimeout(() => card.classList.remove('ring-4', 'ring-green-400'), 1000);
+  card.classList.add('ring-4','ring-green-400');
+  setTimeout(()=>card.classList.remove('ring-4','ring-green-400'),1000);
 }
 
 function confetti() {
-  for (let i = 0; i < 20; i++) {
-    const conf = document.createElement('div');
-    conf.className = 'absolute w-1 h-1 bg-yellow-400 rounded-full animate-fall';
-    conf.style.left = Math.random() * window.innerWidth + 'px';
-    conf.style.top = '-10px';
-    document.body.appendChild(conf);
-    setTimeout(() => conf.remove(), 1500);
+  for(let i=0;i<20;i++){
+    const c=document.createElement('div');
+    c.className='absolute w-1 h-1 bg-yellow-400 rounded-full animate-fall';
+    c.style.left=Math.random()*window.innerWidth+'px';
+    c.style.top='-10px';
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),1500);
   }
 }
 
-function updateVisitorCount() {
+function updateVisitorCount(){
   fetch('/counter')
-    .then(res => res.json())
-    .then(data => {
-      if (data.unique > prevUnique) {
+    .then(r => r.json())
+    .then(data=>{
+      if(!data || typeof data.unique !== "number") return;
+
+      if(data.unique > prevUnique){
         glowCard();
         confetti();
       }
 
-      document.getElementById('totalViews').innerText = data.total;
-      document.getElementById('uniqueViews').innerText = data.unique;
-
-      prevTotal = data.total;
+      document.getElementById('totalViews').innerText = data.total ?? 0;
+      document.getElementById('uniqueViews').innerText = data.unique ?? 0;
       prevUnique = data.unique;
-    });
+    })
+    .catch(()=>console.log("Counter unavailable"));
 }
 
 updateVisitorCount();
 
-</script>
 
-<style>
-@keyframes fall {
-  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-  100% { transform: translateY(150px) rotate(360deg); opacity: 0; }
+function updateFileList(){
+  fileList.innerHTML="";
+
+  selectedFiles.forEach((file,index)=>{
+    const div=document.createElement("div");
+    div.className="bg-surface border border-white/10 rounded-lg p-4";
+
+    div.innerHTML=`
+      <img src="${URL.createObjectURL(file)}" class="w-full h-32 object-cover rounded mb-3"/>
+      <p class="text-sm truncate">${file.name}</p>
+      <div class="w-full bg-slate-700 h-2 mt-2 rounded">
+        <div id="progress-${index}" class="h-2 bg-primary rounded" style="width:0%"></div>
+      </div>
+      <button class="text-red-400 text-xs mt-2">Remove</button>
+    `;
+
+    div.querySelector("button").onclick=()=>{
+      selectedFiles.splice(index,1);
+      updateFileList();
+    };
+
+    fileList.appendChild(div);
+  });
+
+  uploadBtn.classList.toggle("hidden",selectedFiles.length===0);
 }
-.animate-fall {
-  animation: fall 1.5s ease-out forwards;
+
+function handleFiles(files){
+  Array.from(files).forEach(file=>{
+    if(!ALLOWED_TYPES.includes(file.type)){
+      alert(file.name+" invalid type");
+      return;
+    }
+    if(file.size > MAX_SIZE){
+      alert(file.name+" exceeds 10MB");
+      return;
+    }
+    selectedFiles.push(file);
+  });
+
+  updateFileList();
 }
-</style>
+
+fileInput.addEventListener("change",e=>handleFiles(e.target.files));
+dropArea.addEventListener("click",()=>fileInput.click());
+dropArea.addEventListener("dragover",e=>e.preventDefault());
+dropArea.addEventListener("drop",e=>{
+  e.preventDefault();
+  handleFiles(e.dataTransfer.files);
+});
 
 
-  <script>
-    const fileInput = document.getElementById("fileUpload");
-    const fileList = document.getElementById("fileList");
-    const uploadBtn = document.getElementById("uploadBtn");
-    const dropArea = document.getElementById("dropArea");
-    const uploadedFilesDiv = document.getElementById("uploadedFiles");
-    const clearAllBtn = document.getElementById("clearAllBtn");
-    const copyAllBtn = document.getElementById("copyAllBtn");
-    const themeToggle = document.getElementById("themeToggle");
+clearAllBtn.onclick=()=>{
+  uploadedFilesDiv.innerHTML="";
+  selectedFiles=[];
+  fileList.innerHTML="";
+  uploadBtn.classList.add("hidden");
+  fileInput.value="";
+};
 
-    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
-    const ALLOWED_TYPES = ['image/jpeg','image/png','image/gif','image/webp'];
-    const WEBSITE_URL = "/i/"; 
-    let selectedFiles = [];
+copyAllBtn.onclick=()=>{
+  const links = Array.from(uploadedFilesDiv.querySelectorAll("a"))
+    .map(a=>a.href)
+    .join("\n");
 
-    function updateFileList() {
-      fileList.innerHTML = "";
-      selectedFiles.forEach((file, index) => {
-        const div = document.createElement("div");
-        div.className = "flex items-center p-4 bg-gray-800/80 border border-gray-700 shadow-md space-x-4 transform transition-transform hover:scale-105";
+  if(!links){
+    alert("No uploaded files.");
+    return;
+  }
 
-        const img = document.createElement("img");
-        img.className = "w-16 h-16 object-cover";
-        img.src = URL.createObjectURL(file);
+  navigator.clipboard.writeText(links)
+    .then(()=>alert("All links copied!"))
+    .catch(()=>alert("Clipboard failed."));
+};
 
-        const info = document.createElement("div");
-        info.className = "flex-1 min-w-0";
-        info.innerHTML = `<p class="text-gray-200 truncate max-w-[70%]">${file.name}</p>
-                          <div class="w-full bg-gray-700 h-2  mt-1">
-                            <div class="h-2 bg-purple-500" id="progress-${index}" style="width:0%"></div>
-                          </div>`;
 
-        const removeBtn = document.createElement("button");
-        removeBtn.innerText = "Remove";
-        removeBtn.className = "text-[#b76cbe] hover:text-[#e74c9d] flex-shrink-0";
-        removeBtn.onclick = () => {
-          selectedFiles.splice(index, 1);
-          updateFileList();
-          uploadBtn.classList.toggle("hidden", selectedFiles.length === 0);
+uploadBtn.addEventListener("click",()=>{
+  if(!selectedFiles.length) return;
+
+  uploadBtn.innerText="Uploading...";
+  uploadBtn.disabled=true;
+
+  const formData=new FormData();
+  selectedFiles.forEach(f=>formData.append("files[]",f));
+
+  const xhr=new XMLHttpRequest();
+  xhr.open("POST","/upload");
+
+  xhr.upload.onprogress=e=>{
+    if(e.lengthComputable){
+      const percent=(e.loaded/e.total)*100;
+      selectedFiles.forEach((_,index)=>{
+        const bar=document.getElementById(`progress-${index}`);
+        if(bar) bar.style.width=percent+"%";
+      });
+    }
+  };
+
+  xhr.onerror=()=>{
+    alert("Upload failed. Please try again.");
+    resetUploadState();
+  };
+
+  xhr.onload=()=>{
+    if(xhr.status < 200 || xhr.status >= 300){
+      alert("Server error: "+xhr.status);
+      resetUploadState();
+      return;
+    }
+
+    let result;
+    try{
+      result=JSON.parse(xhr.responseText);
+    }catch{
+      alert("Invalid server response");
+      resetUploadState();
+      return;
+    }
+
+    if(!result || !Array.isArray(result.files)){
+      alert("Unexpected server format");
+      resetUploadState();
+      return;
+    }
+
+    const uploadedLinks=[];
+
+    result.files.forEach(fileData=>{
+      if(fileData.status==="success" && fileData.url){
+        const fullURL=window.location.origin+WEBSITE_URL+fileData.url;
+        uploadedLinks.push(fullURL);
+
+        const card=document.createElement("div");
+        card.className="bg-surface border border-white/10 rounded-lg p-4";
+
+        card.innerHTML=`
+          <img src="${WEBSITE_URL+fileData.url}" class="w-full h-32 object-cover rounded mb-3"/>
+          <p class="text-sm truncate mb-1">${fileData.file}</p>
+          <a href="${fullURL}" target="_blank" class="text-primary text-sm underline block mb-2">View</a>
+          <button class="bg-primary text-white px-3 py-1 rounded text-xs">Copy</button>
+        `;
+
+        card.querySelector("button").onclick=()=>{
+          navigator.clipboard.writeText(fullURL)
+            .then(()=>alert("Link copied!"))
+            .catch(()=>alert("Clipboard failed."));
         };
 
-        div.appendChild(img);
-        div.appendChild(info);
-        div.appendChild(removeBtn);
-        fileList.appendChild(div);
-      });
-    }
-
-    function handleFiles(files) {
-      Array.from(files).forEach(file => {
-        if (!ALLOWED_TYPES.includes(file.type)) {
-          alert(`${file.name} is not an allowed image type.`);
-          return;
-        }
-        if (file.size > MAX_SIZE) {
-          alert(`${file.name} exceeds maximum size of 10MB.`);
-          return;
-        }
-        selectedFiles.push(file);
-      });
-      updateFileList();
-      uploadBtn.classList.toggle("hidden", selectedFiles.length === 0);
-    }
-
-    fileInput.addEventListener("change", (e) => handleFiles(e.target.files));
-    dropArea.addEventListener("dragover", (e) => { e.preventDefault(); dropArea.classList.add("border-purple-400"); });
-    dropArea.addEventListener("dragleave", () => dropArea.classList.remove("border-purple-400"));
-    dropArea.addEventListener("drop", (e) => { e.preventDefault(); dropArea.classList.remove("border-purple-400"); handleFiles(e.dataTransfer.files); });
-
-    clearAllBtn.onclick = () => uploadedFilesDiv.innerHTML = "";
-
-    copyAllBtn.onclick = () => {
-      const links = Array.from(uploadedFilesDiv.querySelectorAll("a"))
-                         .map(a => a.href)
-                         .join("\n");
-      if (links.length > 0) {
-        navigator.clipboard.writeText(links);
-        alert("All links copied to clipboard!");
-      } else {
-        alert("No uploaded files to copy.");
+        uploadedFilesDiv.appendChild(card);
       }
-    };
-
-    themeToggle.onclick = () => {
-      document.body.classList.toggle("light-theme");
-      document.body.classList.toggle("dark-theme");
-    };
-
-    uploadBtn.addEventListener("click", () => {
-      if (selectedFiles.length === 0) return;
-      uploadBtn.innerText = "Uploading...";
-      uploadBtn.disabled = true;
-
-      const formData = new FormData();
-      selectedFiles.forEach(file => formData.append("files[]", file));
-
-      const totalSize = selectedFiles.reduce((sum, f) => sum + f.size, 0);
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/upload");
-
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          let loaded = e.loaded;
-          selectedFiles.forEach((file, index) => {
-            const bar = document.getElementById(`progress-${index}`);
-            const filePortion = file.size / totalSize;
-            const fileProgress = Math.min((loaded / totalSize) / filePortion * 100, 100);
-            if (bar) bar.style.width = fileProgress + "%";
-            loaded -= file.size;
-          });
-        }
-      };
-
-      xhr.onload = () => {
-        const result = JSON.parse(xhr.responseText);
-        if (result.files && result.files.length > 0) {
-          result.files.forEach((fileData) => {
-            if (fileData.status === "success") {
-              const fileCard = document.createElement("div");
-              fileCard.className = "p-4 bg-gray-900/60 border border-gray-700 shadow-md flex items-center transform transition-transform hover:scale-105";
-
-              const thumb = document.createElement("img");
-              thumb.src = WEBSITE_URL + fileData.url;
-              thumb.className = "w-16 h-16 object-cover mr-4 flex-shrink-0";
-
-              const info = document.createElement("div");
-              info.className = "flex-1 min-w-0";
-              info.innerHTML = `
-                <p class="text-gray-200 truncate">${fileData.file}</p>
-                <a href="${WEBSITE_URL + fileData.url}" target="_blank" class="text-blue-400 underline truncate block">View</a>
-              `;
-
-              const copyBtn = document.createElement("button");
-              copyBtn.innerText = "Copy";
-              copyBtn.className = "ml-4 flex-shrink-0 text-purple-400 hover:text-purple-600";
-              copyBtn.onclick = () => {
-              const fullURL = window.location.origin + WEBSITE_URL + fileData.url;
-              navigator.clipboard.writeText(fullURL);
-              alert(`${fileData.file} link copied!`);
-              };
-
-              fileCard.appendChild(thumb);
-              fileCard.appendChild(info);
-              fileCard.appendChild(copyBtn);
-              uploadedFilesDiv.appendChild(fileCard);
-
-              navigator.clipboard.writeText(
-                window.location.origin + WEBSITE_URL + fileData.url
-              );
-            } else {
-              alert(fileData.reason || "Upload failed for " + fileData.file);
-            }
-          });
-        }
-
-        selectedFiles = [];
-        uploadBtn.innerText = "Upload Files";
-        uploadBtn.disabled = false;
-        fileInput.value = "";
-        fileList.innerHTML = "";
-      };
-
-      xhr.send(formData);
     });
 
-    document.addEventListener("paste", (event) => {
+    if(uploadedLinks.length){
+      navigator.clipboard.writeText(uploadedLinks.join("\n"))
+        .catch(()=>{});
+    }
 
-  const items = event.clipboardData?.items;
-  if (!items) return;
+    selectedFiles=[];
+    fileList.innerHTML="";
+    fileInput.value="";
+    resetUploadState();
+  };
 
-  for (const item of items) {
+  xhr.send(formData);
+});
 
-    if (item.type.startsWith("image/")) {
+function resetUploadState(){
+  uploadBtn.innerText="Upload Files";
+  uploadBtn.disabled=false;
+}
 
-      const file = item.getAsFile();
-      if (!file) return;
+
+document.addEventListener("paste",(event)=>{
+  const items=event.clipboardData?.items;
+  if(!items) return;
+
+  for(const item of items){
+    if(item.type.startsWith("image/")){
+      const file=item.getAsFile();
+      if(!file) return;
 
       event.preventDefault();
-
-      // Reuse existing validation + queue logic
       handleFiles([file]);
-
-      // Auto trigger upload
       uploadBtn.click();
-
       break;
     }
   }
 });
-  </script>
+</script>
 
 </body>
 </html>
