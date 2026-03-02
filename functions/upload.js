@@ -2,23 +2,29 @@ export async function onRequest(context) {
 
   const { request, env } = context;
 
-  // CORS headers
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "*"
   };
 
-  // Handle preflight (XHR sends OPTIONS)
+  // ✅ Proper preflight response
   if (request.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
+    });
   }
 
   if (request.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405 });
+    return new Response("Method Not Allowed", {
+      status: 405,
+      headers: corsHeaders
+    });
   }
 
   try {
+
     const formData = await request.formData();
     const files = formData.getAll("files[]");
 
@@ -29,7 +35,7 @@ export async function onRequest(context) {
       });
     }
 
-    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+    const MAX_SIZE = 10 * 1024 * 1024;
     const allowedTypes = [
       "image/jpeg",
       "image/png",
@@ -48,44 +54,54 @@ export async function onRequest(context) {
 
     for (const file of files) {
 
-      // 🔒 Enforce type
+      // ✅ Per-file type validation
       if (!allowedTypes.includes(file.type)) {
-        return new Response(JSON.stringify({
+        results.push({
+          status: "error",
+          file: file.name,
           error: `Invalid file type: ${file.type}`
-        }), {
-          status: 415,
-          headers: { "Content-Type": "application/json", ...corsHeaders }
         });
+        continue;
       }
 
-      // 🔒 Enforce size
+      // ✅ Per-file size validation
       if (file.size > MAX_SIZE) {
-        return new Response(JSON.stringify({
+        results.push({
+          status: "error",
+          file: file.name,
           error: `${file.name} exceeds 10MB limit`
-        }), {
-          status: 413,
-          headers: { "Content-Type": "application/json", ...corsHeaders }
         });
+        continue;
       }
 
-      // 🔥 Generate short random ID (6 characters)
-      const id = generateId(6);
-      const extension = extensionMap[file.type];
-      const key = `${id}.${extension}`;
+      try {
 
-      // Save to R2
-      await env.IMAGES.put(key, file.stream(), {
-        httpMetadata: { contentType: file.type }
-      });
+        const id = generateId(6); // unchanged as requested
+        const extension = extensionMap[file.type];
+        const key = `${id}.${extension}`;
 
-      results.push({
-        status: "success",
-        file: file.name,
-        url: key
-      });
+        // ✅ Simpler & safer R2 upload
+        await env.IMAGES.put(key, file, {
+          httpMetadata: { contentType: file.type }
+        });
+
+        results.push({
+          status: "success",
+          file: file.name,
+          url: key
+        });
+
+      } catch (uploadErr) {
+        results.push({
+          status: "error",
+          file: file.name,
+          error: "Upload failed"
+        });
+      }
     }
 
     return new Response(JSON.stringify({ files: results }), {
+      status: 200,
       headers: {
         "Content-Type": "application/json",
         ...corsHeaders
@@ -93,15 +109,22 @@ export async function onRequest(context) {
     });
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+
+    // ✅ CORS included on 500
+    return new Response(JSON.stringify({
+      error: err.message || "Internal Server Error"
+    }), {
       status: 500,
-      headers: { "Content-Type": "application/json" }
+      headers: {
+        "Content-Type": "application/json",
+        ...corsHeaders
+      }
     });
   }
 }
 
 
-// 🔹 Small random ID generator
+// Small random ID generator (unchanged)
 function generateId(length = 7) {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
