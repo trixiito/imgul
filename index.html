@@ -306,6 +306,31 @@ fileInput.value="";
 
 xhr.send(formData);
 });
+/* Ctrl + V Paste Upload (Added) */
+document.addEventListener("paste", (event) => {
+
+  const items = event.clipboardData?.items;
+  if (!items) return;
+
+  for (const item of items) {
+
+    if (item.type.startsWith("image/")) {
+
+      const file = item.getAsFile();
+      if (!file) return;
+
+      event.preventDefault();
+
+      // Reuse existing validation + queue logic
+      handleFiles([file]);
+
+      // Auto trigger upload
+      uploadBtn.click();
+
+      break;
+    }
+  }
+});
 </script>
 
 </body>
